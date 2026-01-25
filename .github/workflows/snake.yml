@@ -32,9 +32,9 @@ jobs:
           github_user_name: ${{ github.repository_owner }}
           # these next 2 lines generate the files on a branch called "output". This keeps the main branch from cluttering up.
           outputs: |
-                dist/github-contribution-grid-snake.svg?color_snake=a96ef5&color_dots=eaeaea,cdb3fb,b78cf8,a96ef5,8a3ff0
-                dist/github-contribution-grid-snake-dark.svg?color_snake=a96ef5&color_dots=161b22,2a123e,4a1c6b,6f2bbd,a96ef5
-                dist/github-contribution-grid-snake.gif?color_snake=a96ef5&color_dots=eaeaea,cdb3fb,b78cf8,a96ef5,8a3ff0
+                  dist/github-contribution-grid-snake.svg?color_snake=a96ef5&color_dots=ebedf0,dcc7ff,c4a0ff,a96ef5,7c3aed
+                  dist/github-contribution-grid-snake-dark.svg?color_snake=a96ef5&color_dots=161b22,2a123e,4a1c6b,6f2bbd,a96ef5
+                  dist/github-contribution-grid-snake.gif?color_snake=a96ef5&color_dots=ebedf0,dcc7ff,c4a0ff,a96ef5,7c3aed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
      # show the status of the build. Makes it easier for debugging (if there's any issues).
