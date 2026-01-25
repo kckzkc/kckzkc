@@ -159,11 +159,11 @@ for x, week in enumerate(weeks):
         sy = cy - sprite_h - 2 - jump
 
         # optional glow effect (cheap): draw sprite twice with offset + low alpha
-        glow = Image.new("RGBA", (W, H), (0,0,0,0))
-        gd = ImageDraw.Draw(glow)
+        # glow = Image.new("RGBA", (W, H), (0,0,0,0))
+        # gd = ImageDraw.Draw(glow)
         draw_sprite(gd, sx, sy, scale=scale)
-        glow = glow.filter(Image.Filter.GaussianBlur(radius=1)) if hasattr(Image, "Filter") else glow
-        frame.alpha_composite(glow)
+        # glow = glow.filter(Image.Filter.GaussianBlur(radius=1)) if hasattr(Image, "Filter") else glow
+        # frame.alpha_composite(glow)
 
         draw_sprite(d, sx, sy, scale=scale)
 
