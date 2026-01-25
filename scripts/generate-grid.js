@@ -73,19 +73,28 @@ function renderSVG(weeks) {
   const height = padY * 2 + headerH + gridH + legendH;
 
   // Month labels: label when month changes
-  let monthLabels = "";
-  let lastMonth = null;
-  weeks.forEach((w, x) => {
-    const topDay = w.contributionDays[0]; // Sunday
-    const d = new Date(topDay.date + "T00:00:00Z");
-    const m = d.getUTCMonth();
-    if (m !== lastMonth) {
-      const lx = padX + leftW + x * (cell + gap);
-      const ly = padY + 14;
-      monthLabels += `<text x="${lx}" y="${ly}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">${monthName(m)}</text>\n`;
-      lastMonth = m;
-    }
-  });
+let monthLabels = "";
+let lastMonth = null;
+let lastLabelX = -999;          // last labeled column index
+const minColsBetween = 3;       // prevent overlap (tweak 3–5)
+
+weeks.forEach((w, x) => {
+  const topDay = w.contributionDays[0]; // Sunday
+  const d = new Date(topDay.date + "T00:00:00Z");
+  const m = d.getUTCMonth();
+
+  const monthChanged = (m !== lastMonth);
+  const farEnough = (x - lastLabelX) >= minColsBetween;
+
+  if (monthChanged && farEnough) {
+    const lx = padX + leftW + x * (cell + gap);
+    const ly = padY + 14;
+    monthLabels += `<text x="${lx}" y="${ly}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">${monthName(m)}</text>\n`;
+    lastLabelX = x;
+  }
+
+  lastMonth = m;
+});
 
   // Day labels (Mon/Wed/Fri)
   const dayLabels = [
