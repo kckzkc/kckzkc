@@ -23,11 +23,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 2) Recolor snake to #a96ef5 in both SVGs
+      - name: Ensure dist is writable
+        run: |
+          mkdir -p dist
+          chmod -R u+rwX dist
+          
       - name: Recolor snake to purple
         run: |
           for f in dist/snake.svg dist/snake-dark.svg; do
-            # Replace common snake colors with your purple
-            sed -i 's/#000000/#a96ef5/g; s/#000/#a96ef5/g; s/black/#a96ef5/g; s/#ffffff/#a96ef5/g; s/#fff/#a96ef5/g; s/white/#a96ef5/g' "$f"
+            tmp="$(mktemp)"
+            sed 's/#000000/#a96ef5/g; s/#000/#a96ef5/g; s/black/#a96ef5/g; s/#ffffff/#a96ef5/g; s/#fff/#a96ef5/g; s/white/#a96ef5/g' "$f" > "$tmp"
+            cat "$tmp" > "$f"
+            rm "$tmp"
           done
 
       - name: Push new files to output branch
