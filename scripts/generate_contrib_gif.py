@@ -35,17 +35,10 @@ def fetch_weeks():
     )
     r.raise_for_status()
     data = r.json()
-    weeks = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
-    return weeks
+    return data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
 
-# Color ramp (purple grid, GitHub-dark empty)
-COLORS = [
-    "#161b22",  # empty
-    "#2d1655",
-    "#4c1d95",
-    "#6d28d9",
-    "#8b5cf6",
-]
+COLORS = ["#161b22", "#2d1655", "#4c1d95", "#6d28d9", "#8b5cf6"]
+MONSTER = "#57D364"
 
 def level(count: int) -> int:
     if count <= 0: return 0
@@ -54,14 +47,10 @@ def level(count: int) -> int:
     if count <= 12: return 3
     return 4
 
-# Neon green monster
-MONSTER = "#57D364"
-
 def hex_to_rgb(h):
     h = h.lstrip("#")
-    return tuple(int(h[i:i+2], 16) for i in (0,2,4))
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
-# Simple 8x8 pixel monster sprite (1 = filled)
 SPRITE = [
     "00111100",
     "01111110",
@@ -80,14 +69,13 @@ def draw_sprite(draw, x, y, scale=2):
             if b == "1":
                 x0 = x + col * scale
                 y0 = y + row * scale
-                draw.rectangle([x0, y0, x0+scale-1, y0+scale-1], fill=c)
+                draw.rectangle([x0, y0, x0 + scale - 1, y0 + scale - 1], fill=c)
 
 def main():
     weeks = fetch_weeks()
     cols = len(weeks)
     rows = 7
 
-    # Render settings (GitHub-ish)
     cell = 10
     gap = 3
     padX = 18
@@ -96,50 +84,36 @@ def main():
     gridW = cols * (cell + gap) - gap
     gridH = rows * (cell + gap) - gap
 
-    # Transparent background GIFs aren’t truly transparent everywhere,
-    # so we choose a near-GitHub-dark background for best look.
-    bg = (13, 17, 23)  # #0d1117-ish
-
+    bg = hex_to_rgb("#0d1117")
     W = padX * 2 + gridW
     H = padY * 2 + gridH
 
-    # Build a base frame with the grid
     base = Image.new("RGBA", (W, H), bg + (255,))
     d0 = ImageDraw.Draw(base)
 
-# draw grid safely (some weeks may not have 7 days in edge cases)
-for x, week in enumerate(weeks):
-    days = week.get("contributionDays", [])
+    # draw grid safely
+    for x, week in enumerate(weeks):
+        days = week.get("contributionDays", [])
+        if len(days) < 7:
+            days = days + [{"contributionCount": 0, "date": ""}] * (7 - len(days))
 
-    # If missing days, pad with empty days
-    # (GitHub weeks should be 7, but this avoids crashing)
-    if len(days) < 7:
-        days = days + [{"contributionCount": 0, "date": ""}] * (7 - len(days))
+        for y in range(7):
+            day = days[y]
+            fill = hex_to_rgb(COLORS[level(day.get("contributionCount", 0))])
+            px = padX + x * (cell + gap)
+            py = padY + y * (cell + gap)
+            d0.rounded_rectangle([px, py, px + cell, py + cell], radius=2, fill=fill)
 
-    for y in range(7):
-        day = days[y]
-        fill = hex_to_rgb(COLORS[level(day.get("contributionCount", 0))])
-        px = padX + x * (cell + gap)
-        py = padY + y * (cell + gap)
-        d0.rounded_rectangle([px, py, px+cell, py+cell], radius=2, fill=fill)
-
-    # Animation path: hop across columns
     total_frames = 48
     frames = []
 
-    # Choose a “route”: monster moves across the grid, looping
     def monster_pos(t):
-        # normalized 0..1
         p = t / (total_frames - 1)
-        # move left->right across columns
         col = int(p * (cols - 1))
-        # bounce row pattern
-        row = int((math.sin(p * math.pi * 4) + 1) * 0.5 * 6)  # 0..6
-        # jump height
-        jump = int(abs(math.sin(p * math.pi * 8)) * 8)  # pixels
+        row = int((math.sin(p * math.pi * 4) + 1) * 0.5 * 6)
+        jump = int(abs(math.sin(p * math.pi * 8)) * 8)
         return col, row, jump
 
-    # sprite size
     scale = 2
     sprite_w = 8 * scale
     sprite_h = 8 * scale
@@ -150,34 +124,23 @@ for x, week in enumerate(weeks):
 
         col, row, jump = monster_pos(i)
 
-        # anchor on cell center
         cx = padX + col * (cell + gap) + cell // 2
         cy = padY + row * (cell + gap) + cell // 2
 
-        # put sprite slightly above the square, jumping
         sx = cx - sprite_w // 2
         sy = cy - sprite_h - 2 - jump
 
-        # optional glow effect (cheap): draw sprite twice with offset + low alpha
-        # glow = Image.new("RGBA", (W, H), (0,0,0,0))
-        # gd = ImageDraw.Draw(glow)
-        draw_sprite(gd, sx, sy, scale=scale)
-        # glow = glow.filter(Image.Filter.GaussianBlur(radius=1)) if hasattr(Image, "Filter") else glow
-        # frame.alpha_composite(glow)
-
         draw_sprite(d, sx, sy, scale=scale)
-
         frames.append(frame.convert("P", palette=Image.ADAPTIVE))
 
     os.makedirs("assets", exist_ok=True)
     out_path = "assets/contributions.gif"
 
-    # Save GIF (loop forever)
     frames[0].save(
         out_path,
         save_all=True,
         append_images=frames[1:],
-        duration=90,  # ms per frame
+        duration=90,
         loop=0,
         optimize=True,
     )
