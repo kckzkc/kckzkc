@@ -1,34 +1,35 @@
-# GitHub Action for generating a contribution graph with a snake eating your contributions.
-
 name: Generate Snake
 
 on:
   schedule:
-    # every 6 hours
     - cron: "0 */6 * * *"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # Checks repo under $GITHUB_WORKSPACE
       - uses: actions/checkout@v3
 
-      # Generates the snake (SVG) with custom color
-      - name: Generate snake SVG
-        uses: Sutil/snk@master
+      # 1) Generate animated snake SVGs (light + dark)
+      - name: Generate snake (animated)
+        uses: Platane/snk@v3
         with:
           github_user_name: ${{ github.repository_owner }}
-          svg_out_path: dist/github-contribution-grid-snake.svg
-          snake_color: "#a96ef5"
+          outputs: |
+            dist/snake.svg
+            dist/snake-dark.svg?palette=github-dark
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # show the status of the build
-      - name: Show build status
-        run: git status
+      # 2) Recolor snake to #a96ef5 in both SVGs
+      - name: Recolor snake to purple
+        run: |
+          for f in dist/snake.svg dist/snake-dark.svg; do
+            # Replace common snake colors with your purple
+            sed -i 's/#000000/#a96ef5/g; s/#000/#a96ef5/g; s/black/#a96ef5/g; s/#ffffff/#a96ef5/g; s/#fff/#a96ef5/g; s/white/#a96ef5/g' "$f"
+          done
 
-      # Push new files to output branch
       - name: Push new files to output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
         with:
