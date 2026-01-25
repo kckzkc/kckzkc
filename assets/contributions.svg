@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="750" height="150" viewBox="0 0 750 150">
   <text x="48" y="24" font-family="ui-sans-serif,system-ui" font-size="12" fill="#8b949e">Jan</text>
-<text x="61" y="24" font-family="ui-sans-serif,system-ui" font-size="12" fill="#8b949e">Feb</text>
 <text x="113" y="24" font-family="ui-sans-serif,system-ui" font-size="12" fill="#8b949e">Mar</text>
 <text x="178" y="24" font-family="ui-sans-serif,system-ui" font-size="12" fill="#8b949e">Apr</text>
 <text x="230" y="24" font-family="ui-sans-serif,system-ui" font-size="12" fill="#8b949e">May</text>
@@ -1110,7 +1109,7 @@
   <title>2026-01-24: 7 contributions</title>
 </rect>
 <rect x="724" y="30" width="10" height="10" rx="2" fill="#8b5cf6">
-  <title>2026-01-25: 24 contributions</title>
+  <title>2026-01-25: 26 contributions</title>
 </rect>
 
   
