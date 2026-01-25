@@ -72,28 +72,50 @@ function renderSVG(weeks) {
   const width = padX * 2 + leftW + gridW;
   const height = padY * 2 + headerH + gridH + legendH;
 
-  // Month labels: label when month changes
+// Month labels: based on first day-of-month encountered (GitHub-like)
 let monthLabels = "";
-let lastMonth = null;
-let lastLabelX = -999;          // last labeled column index
-const minColsBetween = 3;       // prevent overlap (tweak 3–5)
 
+// Map monthKey -> first column index where that month appears
+// monthKey is "YYYY-MM" so year boundaries are handled correctly.
+const firstColForMonth = new Map();
+
+// Walk days left->right, top->bottom, record first time we see a month
 weeks.forEach((w, x) => {
-  const topDay = w.contributionDays[0]; // Sunday
-  const d = new Date(topDay.date + "T00:00:00Z");
-  const m = d.getUTCMonth();
+  w.contributionDays.forEach((day) => {
+    if (!day.date) return;
+    const dt = new Date(day.date + "T00:00:00Z");
+    const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}`;
+    if (!firstColForMonth.has(key)) firstColForMonth.set(key, x);
+  });
+});
 
-  const monthChanged = (m !== lastMonth);
-  const farEnough = (x - lastLabelX) >= minColsBetween;
+// Sort months by their first column
+const months = [...firstColForMonth.entries()]
+  .sort((a, b) => a[1] - b[1]); // by column index
 
-  if (monthChanged && farEnough) {
-    const lx = padX + leftW + x * (cell + gap);
-    const ly = padY + 14;
-    monthLabels += `<text x="${lx}" y="${ly}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">${monthName(m)}</text>\n`;
-    lastLabelX = x;
-  }
+// Avoid overlap like GitHub (only label if far enough from last label)
+const minColsBetween = 3;
+let lastLabelX = -999;
 
-  lastMonth = m;
+// IMPORTANT: drop the first label if it's a tiny partial month at the very start.
+// This fixes "Jan" showing at far-left when the 12-mo window should start at Feb.
+// (If a month starts in the first 2 columns, it's almost always just a stub.)
+const skipIfStartsBeforeCol = 2;
+
+months.forEach(([key, colX], idx) => {
+  // Skip first label if it starts too close to the left edge (partial month stub)
+  if (idx === 0 && colX <= skipIfStartsBeforeCol) return;
+
+  if (colX - lastLabelX < minColsBetween) return;
+
+  const [yyyy, mm] = key.split("-");
+  const mIndex = Number(mm) - 1;
+
+  const lx = padX + leftW + colX * (cell + gap);
+  const ly = padY + 14;
+
+  monthLabels += `<text x="${lx}" y="${ly}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">${monthName(mIndex)}</text>\n`;
+  lastLabelX = colX;
 });
 
   // Day labels (Mon/Wed/Fri)
@@ -121,24 +143,6 @@ weeks.forEach((w, x) => {
 </rect>\n`;
     });
   });
-
-  // Legend (Less -> More) bottom-right
-  const legendX = padX + leftW + gridW - (5 * cell + 4 * gap + 55);
-  const legendY = padY + headerH + gridH + 16;
-
-  const legendSquares = colors
-    .map((c, i) => {
-      const x = legendX + 38 + i * (cell + gap);
-      const y = legendY - cell + 2;
-      return `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2" fill="${c}" />`;
-    })
-    .join("\n");
-
-  const legend = `
-<text x="${legendX}" y="${legendY}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">Less</text>
-${legendSquares}
-<text x="${legendX + 38 + 5 * (cell + gap) + 6}" y="${legendY}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">More</text>
-`;
 
   // Transparent SVG (no background rect)
   return `<?xml version="1.0" encoding="UTF-8"?>
