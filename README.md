@@ -1,3 +1,3 @@
 ## Hi there 👋
 
-![snake animation](https://github.com/kckzkc/kckzkc/blob/output/github-contribution-grid-snake2.svg)
+<iframe src="https://gitchart-nine.vercel.app/api/og/kckzkc?color=9446e2" width="1200" height="180" frameborder="0" scrolling="no"></iframe>
