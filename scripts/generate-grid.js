@@ -30,9 +30,13 @@ query ($login: String!) {
 
 const text = "#8b949e"; // GitHub secondary text on dark
 
-// Purple ramp (edit these if you want)
+// Card background (not transparent)
+const bg = "#0d1117";
+const border = "#161b22";
+
+// Purple ramp
 const colors = [
-  "#161b22", // empty (GitHub dark tile)
+  "#161b22", // empty
   "#2d1655",
   "#4c1d95",
   "#6d28d9",
@@ -52,16 +56,15 @@ function monthName(m) {
 }
 
 function renderSVG(weeks) {
-  // GitHub-like sizing
   const cell = 10;
   const gap = 3;
 
   const padX = 16;
-  const padY = 10;
+  const padY = 12;
 
   const headerH = 20; // months row
   const leftW = 32;   // day labels column
-  const legendH = 22; // legend row
+  const bottomPad = 14;
 
   const cols = weeks.length;
   const rows = 7;
@@ -70,55 +73,45 @@ function renderSVG(weeks) {
   const gridH = rows * (cell + gap) - gap;
 
   const width = padX * 2 + leftW + gridW;
-  const height = padY * 2 + headerH + gridH + legendH;
+  const height = padY * 2 + headerH + gridH + bottomPad;
 
-// Month labels: based on first day-of-month encountered (GitHub-like)
-let monthLabels = "";
+  // ---- Month labels (GitHub-like): based on first day-of-month encountered ----
+  let monthLabels = "";
 
-// Map monthKey -> first column index where that month appears
-// monthKey is "YYYY-MM" so year boundaries are handled correctly.
-const firstColForMonth = new Map();
+  const firstColForMonth = new Map(); // "YYYY-MM" -> first column index
 
-// Walk days left->right, top->bottom, record first time we see a month
-weeks.forEach((w, x) => {
-  w.contributionDays.forEach((day) => {
-    if (!day.date) return;
-    const dt = new Date(day.date + "T00:00:00Z");
-    const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}`;
-    if (!firstColForMonth.has(key)) firstColForMonth.set(key, x);
+  weeks.forEach((w, x) => {
+    w.contributionDays.forEach((day) => {
+      if (!day.date) return;
+      const dt = new Date(day.date + "T00:00:00Z");
+      const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}`;
+      if (!firstColForMonth.has(key)) firstColForMonth.set(key, x);
+    });
   });
-});
 
-// Sort months by their first column
-const months = [...firstColForMonth.entries()]
-  .sort((a, b) => a[1] - b[1]); // by column index
+  const months = [...firstColForMonth.entries()].sort((a, b) => a[1] - b[1]);
 
-// Avoid overlap like GitHub (only label if far enough from last label)
-const minColsBetween = 3;
-let lastLabelX = -999;
+  const minColsBetween = 3;
+  let lastLabelX = -999;
 
-// IMPORTANT: drop the first label if it's a tiny partial month at the very start.
-// This fixes "Jan" showing at far-left when the 12-mo window should start at Feb.
-// (If a month starts in the first 2 columns, it's almost always just a stub.)
-const skipIfStartsBeforeCol = 2;
+  // Skip the first month label if it starts too close to the left edge (partial stub month)
+  const skipIfStartsBeforeCol = 2;
 
-months.forEach(([key, colX], idx) => {
-  // Skip first label if it starts too close to the left edge (partial month stub)
-  if (idx === 0 && colX <= skipIfStartsBeforeCol) return;
+  months.forEach(([key, colX], idx) => {
+    if (idx === 0 && colX <= skipIfStartsBeforeCol) return;
+    if (colX - lastLabelX < minColsBetween) return;
 
-  if (colX - lastLabelX < minColsBetween) return;
+    const [, mm] = key.split("-");
+    const mIndex = Number(mm) - 1;
 
-  const [yyyy, mm] = key.split("-");
-  const mIndex = Number(mm) - 1;
+    const lx = padX + leftW + colX * (cell + gap);
+    const ly = padY + 14;
 
-  const lx = padX + leftW + colX * (cell + gap);
-  const ly = padY + 14;
+    monthLabels += `<text x="${lx}" y="${ly}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">${monthName(mIndex)}</text>\n`;
+    lastLabelX = colX;
+  });
 
-  monthLabels += `<text x="${lx}" y="${ly}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">${monthName(mIndex)}</text>\n`;
-  lastLabelX = colX;
-});
-
-  // Day labels (Mon/Wed/Fri)
+  // ---- Day labels (Mon/Wed/Fri) ----
   const dayLabels = [
     { label: "Mon", row: 1 },
     { label: "Wed", row: 3 },
@@ -131,7 +124,7 @@ months.forEach(([key, colX], idx) => {
     })
     .join("\n");
 
-  // Squares + hover title
+  // ---- Squares ----
   let rects = "";
   weeks.forEach((w, x) => {
     w.contributionDays.forEach((d, y) => {
@@ -144,13 +137,13 @@ months.forEach(([key, colX], idx) => {
     });
   });
 
-  // Transparent SVG (no background rect)
+  // ---- Background card (non-transparent) ----
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <rect x="0" y="0" width="${width}" height="${height}" rx="12" fill="${bg}" stroke="${border}" />
   ${monthLabels}
   ${dayLabels}
   ${rects}
-  ${legend}
 </svg>`;
 }
 
