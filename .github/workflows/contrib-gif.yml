@@ -1,0 +1,36 @@
+name: Update contribution GIF
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install pillow requests
+
+      - name: Generate GIF
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: kckzkc
+        run: python scripts/generate_contrib_gif.py
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/contributions.gif
+          git commit -m "chore: update contribution gif" || exit 0
+          git push
