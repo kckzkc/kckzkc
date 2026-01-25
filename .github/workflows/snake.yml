@@ -21,17 +21,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Recolor snake to purple (writable copy)
+      - name: Recolor snake to purple (robust)
         run: |
           mkdir -p out
-
           cp dist/snake.svg out/snake.svg
           cp dist/snake-dark.svg out/snake-dark.svg
 
           for f in out/snake.svg out/snake-dark.svg; do
-            tmp="$(mktemp)"
-            sed 's/#000000/#a96ef5/g; s/#000/#a96ef5/g; s/black/#a96ef5/g; s/#ffffff/#a96ef5/g; s/#fff/#a96ef5/g; s/white/#a96ef5/g' "$f" > "$tmp"
-            mv "$tmp" "$f"
+            # 1) Force common snake CSS variables/classes if present
+            sed -i 's/--snake-color:[^;"]*/--snake-color:#a96ef5/g' "$f" || true
+
+            # 2) Replace any path/polygon fill/stroke inline colors (covers rgb(...) and hex)
+            #    This targets attributes like fill="..." stroke="..." on SVG shapes.
+            perl -0777 -pe '
+              s/(<path\b[^>]*\sfill=")[^"]*(")/$1#a96ef5$2/g;
+              s/(<path\b[^>]*\sstroke=")[^"]*(")/$1#a96ef5$2/g;
+              s/(<polygon\b[^>]*\sfill=")[^"]*(")/$1#a96ef5$2/g;
+              s/(<polygon\b[^>]*\sstroke=")[^"]*(")/$1#a96ef5$2/g;
+              s/(<rect\b[^>]*\sfill=")[^"]*(")/$1#a96ef5$2/g if /data-snke/;
+            ' -i "$f"
           done
 
       - name: Push new files to output branch
