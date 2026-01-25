@@ -107,14 +107,21 @@ def main():
     base = Image.new("RGBA", (W, H), bg + (255,))
     d0 = ImageDraw.Draw(base)
 
-    # draw grid
-    for x in range(cols):
-        for y in range(rows):
-            day = weeks[x]["contributionDays"][y]
-            fill = hex_to_rgb(COLORS[level(day["contributionCount"])])
-            px = padX + x * (cell + gap)
-            py = padY + y * (cell + gap)
-            d0.rounded_rectangle([px, py, px+cell, py+cell], radius=2, fill=fill)
+# draw grid safely (some weeks may not have 7 days in edge cases)
+for x, week in enumerate(weeks):
+    days = week.get("contributionDays", [])
+
+    # If missing days, pad with empty days
+    # (GitHub weeks should be 7, but this avoids crashing)
+    if len(days) < 7:
+        days = days + [{"contributionCount": 0, "date": ""}] * (7 - len(days))
+
+    for y in range(7):
+        day = days[y]
+        fill = hex_to_rgb(COLORS[level(day.get("contributionCount", 0))])
+        px = padX + x * (cell + gap)
+        py = padY + y * (cell + gap)
+        d0.rounded_rectangle([px, py, px+cell, py+cell], radius=2, fill=fill)
 
     # Animation path: hop across columns
     total_frames = 48
