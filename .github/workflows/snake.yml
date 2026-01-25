@@ -11,7 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # 1) Generate animated snake SVGs (light + dark)
       - name: Generate snake (animated)
         uses: Platane/snk@v3
         with:
@@ -22,26 +21,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2) Recolor snake to #a96ef5 in both SVGs
-      - name: Ensure dist is writable
+      - name: Recolor snake to purple (writable copy)
         run: |
-          mkdir -p dist
-          chmod -R u+rwX dist
-          
-      - name: Recolor snake to purple
-        run: |
-          for f in dist/snake.svg dist/snake-dark.svg; do
+          mkdir -p out
+
+          cp dist/snake.svg out/snake.svg
+          cp dist/snake-dark.svg out/snake-dark.svg
+
+          for f in out/snake.svg out/snake-dark.svg; do
             tmp="$(mktemp)"
             sed 's/#000000/#a96ef5/g; s/#000/#a96ef5/g; s/black/#a96ef5/g; s/#ffffff/#a96ef5/g; s/#fff/#a96ef5/g; s/white/#a96ef5/g' "$f" > "$tmp"
-            cat "$tmp" > "$f"
-            rm "$tmp"
+            mv "$tmp" "$f"
           done
 
       - name: Push new files to output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
         with:
           target_branch: output
-          build_dir: dist
+          build_dir: out
           commit_message: Update snake animations
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
