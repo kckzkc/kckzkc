@@ -37,8 +37,14 @@ def fetch_weeks():
     data = r.json()
     return data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
 
+# Grid colors (purple ramp)
 COLORS = ["#161b22", "#2d1655", "#4c1d95", "#6d28d9", "#8b5cf6"]
-MONSTER = "#57D364"
+
+# Alien (neon green head)
+ALIEN_GREEN = "#57D364"
+DARK = "#0b0f14"
+SHIRT = "#c9d1d9"
+PANTS = "#8b949e"
 
 def level(count: int) -> int:
     if count <= 0: return 0
@@ -51,31 +57,103 @@ def hex_to_rgb(h):
     h = h.lstrip("#")
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
-SPRITE = [
-    "00111100",
-    "01111110",
-    "11011011",
-    "11111111",
-    "11111111",
-    "10111101",
-    "10000001",
-    "01000010",
-]
+def draw_alien(draw, x, y, phase=0.0, scale=1.0):
+    """
+    Non-pixel alien head + human-ish body.
+    x, y = top-left anchor of character box.
+    phase cycles walking (0..1).
+    """
+    g = hex_to_rgb(ALIEN_GREEN)
+    dark = hex_to_rgb(DARK)
+    shirt = hex_to_rgb(SHIRT)
+    pants = hex_to_rgb(PANTS)
 
-def draw_sprite(draw, x, y, scale=2):
-    c = hex_to_rgb(MONSTER)
-    for row, bits in enumerate(SPRITE):
-        for col, b in enumerate(bits):
-            if b == "1":
-                x0 = x + col * scale
-                y0 = y + row * scale
-                draw.rectangle([x0, y0, x0 + scale - 1, y0 + scale - 1], fill=c)
+    head_w = int(18 * scale)
+    head_h = int(22 * scale)
+    body_w = int(14 * scale)
+    body_h = int(18 * scale)
+
+    # gentle bob while walking
+    bob = int((math.sin(phase * 2 * math.pi) * 1.5) * scale)
+
+    # Head (oval)
+    hx0 = x
+    hy0 = y + bob
+    hx1 = x + head_w
+    hy1 = y + head_h + bob
+    draw.ellipse([hx0, hy0, hx1, hy1], fill=g)
+
+    # Eyes (big black ovals)
+    eye_w = int(5 * scale)
+    eye_h = int(7 * scale)
+    ex_offset = int(4 * scale)
+    ey_offset = int(7 * scale)
+    draw.ellipse([x + ex_offset, y + ey_offset + bob,
+                  x + ex_offset + eye_w, y + ey_offset + eye_h + bob], fill=dark)
+    draw.ellipse([x + head_w - ex_offset - eye_w, y + ey_offset + bob,
+                  x + head_w - ex_offset, y + ey_offset + eye_h + bob], fill=dark)
+
+    # Neck
+    neck_w = int(5 * scale)
+    neck_h = int(3 * scale)
+    nx0 = x + head_w // 2 - neck_w // 2
+    ny0 = y + head_h + bob - 1
+    draw.rectangle([nx0, ny0, nx0 + neck_w, ny0 + neck_h], fill=g)
+
+    # Torso (shirt)
+    tx0 = x + head_w // 2 - body_w // 2
+    ty0 = y + head_h + neck_h + bob
+    tx1 = tx0 + body_w
+    ty1 = ty0 + body_h
+    draw.rounded_rectangle([tx0, ty0, tx1, ty1], radius=max(1, int(3 * scale)), fill=shirt)
+
+    # Arms (swing)
+    swing = math.sin(phase * 2 * math.pi)  # -1..1
+    arm_len = int(10 * scale)
+    arm_y = ty0 + int(5 * scale)
+
+    # left arm
+    draw.line(
+        [tx0, arm_y, tx0 - arm_len, arm_y + int(3 * scale * swing)],
+        fill=g, width=max(1, int(2 * scale))
+    )
+    # right arm
+    draw.line(
+        [tx1, arm_y, tx1 + arm_len, arm_y - int(3 * scale * swing)],
+        fill=g, width=max(1, int(2 * scale))
+    )
+
+    # Legs (walking)
+    leg_len = int(12 * scale)
+    hip_y = ty1
+    hip_x = x + head_w // 2
+    step = math.sin(phase * 2 * math.pi)  # -1..1
+
+    # left leg
+    draw.line(
+        [hip_x - int(3 * scale), hip_y,
+         hip_x - int(5 * scale) - int(3 * scale * step), hip_y + leg_len],
+        fill=pants, width=max(1, int(3 * scale))
+    )
+    # right leg
+    draw.line(
+        [hip_x + int(3 * scale), hip_y,
+         hip_x + int(5 * scale) + int(3 * scale * step), hip_y + leg_len],
+        fill=pants, width=max(1, int(3 * scale))
+    )
+
+    # Feet
+    draw.line([hip_x - int(7 * scale), hip_y + leg_len, hip_x - int(2 * scale), hip_y + leg_len],
+              fill=pants, width=max(1, int(3 * scale)))
+    draw.line([hip_x + int(2 * scale), hip_y + leg_len, hip_x + int(7 * scale), hip_y + leg_len],
+              fill=pants, width=max(1, int(3 * scale)))
 
 def main():
     weeks = fetch_weeks()
     cols = len(weeks)
     rows = 7
 
+    # Grid sizing
     cell = 10
     gap = 3
     padX = 18
@@ -84,6 +162,7 @@ def main():
     gridW = cols * (cell + gap) - gap
     gridH = rows * (cell + gap) - gap
 
+    # Background (GIF can’t be truly transparent reliably on GitHub)
     bg = hex_to_rgb("#0d1117")
     W = padX * 2 + gridW
     H = padY * 2 + gridH
@@ -91,7 +170,7 @@ def main():
     base = Image.new("RGBA", (W, H), bg + (255,))
     d0 = ImageDraw.Draw(base)
 
-    # draw grid safely
+    # Draw grid safely
     for x, week in enumerate(weeks):
         days = week.get("contributionDays", [])
         if len(days) < 7:
@@ -104,33 +183,38 @@ def main():
             py = padY + y * (cell + gap)
             d0.rounded_rectangle([px, py, px + cell, py + cell], radius=2, fill=fill)
 
-    total_frames = 48
+    # Slower animation
+    total_frames = 80   # smoother + slower
     frames = []
 
-    def monster_pos(t):
-        p = t / (total_frames - 1)
-        col = int(p * (cols - 1))
-        row = int((math.sin(p * math.pi * 4) + 1) * 0.5 * 6)
-        jump = int(abs(math.sin(p * math.pi * 8)) * 8)
-        return col, row, jump
-
-    scale = 2
-    sprite_w = 8 * scale
-    sprite_h = 8 * scale
+    # Alien sizing (roughly matches draw_alien proportions)
+    scale = 1.0
+    alien_w = int(18 * scale)
+    alien_h = int((22 + 3 + 18 + 12) * scale)  # head + neck + body + legs
 
     for i in range(total_frames):
         frame = base.copy()
         d = ImageDraw.Draw(frame)
 
-        col, row, jump = monster_pos(i)
+        p = i / (total_frames - 1)  # 0..1 progress across the year
 
+        # Walk left -> right across columns
+        col = int(p * (cols - 1))
+        row = 3  # middle-ish row for placement
+
+        # Center of the target cell
         cx = padX + col * (cell + gap) + cell // 2
         cy = padY + row * (cell + gap) + cell // 2
 
-        sx = cx - sprite_w // 2
-        sy = cy - sprite_h - 2 - jump
+        # Walk cycle phase (bigger divisor = slower step cadence)
+        phase = (i / 18.0) % 1.0
 
-        draw_sprite(d, sx, sy, scale=scale)
+        # Place alien so feet sit near the grid row
+        x = int(cx - alien_w // 2)
+        y = int(cy - alien_h + 12)  # adjust if you want higher/lower
+
+        draw_alien(d, x, y, phase=phase, scale=scale)
+
         frames.append(frame.convert("P", palette=Image.ADAPTIVE))
 
     os.makedirs("assets", exist_ok=True)
@@ -140,7 +224,7 @@ def main():
         out_path,
         save_all=True,
         append_images=frames[1:],
-        duration=90,
+        duration=140,  # ms per frame (slower)
         loop=0,
         optimize=True,
     )
