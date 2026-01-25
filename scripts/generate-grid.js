@@ -28,9 +28,9 @@ query ($login: String!) {
 }
 `;
 
-const text = "#8b949e";  // GitHub secondary text on dark
+const text = "#8b949e"; // GitHub secondary text on dark
 
-// purple ramp (you can change these)
+// Purple ramp (edit these if you want)
 const colors = [
   "#161b22", // empty (GitHub dark tile)
   "#2d1655",
@@ -48,24 +48,20 @@ function level(count) {
 }
 
 function monthName(m) {
-  return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m];
-}
-
-function monthName(m) {
-  return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m];
+  return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m];
 }
 
 function renderSVG(weeks) {
   // GitHub-like sizing
-  const cell = 10;     // GitHub squares are ~10px
+  const cell = 10;
   const gap = 3;
 
   const padX = 16;
   const padY = 10;
 
-  const headerH = 20;  // months row
-  const leftW = 32;    // day labels column
-  const legendH = 22;  // legend row
+  const headerH = 20; // months row
+  const leftW = 32;   // day labels column
+  const legendH = 22; // legend row
 
   const cols = weeks.length;
   const rows = 7;
@@ -76,7 +72,7 @@ function renderSVG(weeks) {
   const width = padX * 2 + leftW + gridW;
   const height = padY * 2 + headerH + gridH + legendH;
 
-  // Month labels: label when month changes (like GitHub)
+  // Month labels: label when month changes
   let monthLabels = "";
   let lastMonth = null;
   weeks.forEach((w, x) => {
@@ -91,16 +87,18 @@ function renderSVG(weeks) {
     }
   });
 
-  // Day labels (GitHub shows Mon/Wed/Fri)
+  // Day labels (Mon/Wed/Fri)
   const dayLabels = [
     { label: "Mon", row: 1 },
     { label: "Wed", row: 3 },
     { label: "Fri", row: 5 },
-  ].map(({ label, row }) => {
-    const x = padX;
-    const y = padY + headerH + row * (cell + gap) + cell - 1;
-    return `<text x="${x}" y="${y}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">${label}</text>`;
-  }).join("\n");
+  ]
+    .map(({ label, row }) => {
+      const x = padX;
+      const y = padY + headerH + row * (cell + gap) + cell - 1;
+      return `<text x="${x}" y="${y}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">${label}</text>`;
+    })
+    .join("\n");
 
   // Squares + hover title
   let rects = "";
@@ -119,11 +117,13 @@ function renderSVG(weeks) {
   const legendX = padX + leftW + gridW - (5 * cell + 4 * gap + 55);
   const legendY = padY + headerH + gridH + 16;
 
-  const legendSquares = colors.map((c, i) => {
-    const x = legendX + 38 + i * (cell + gap);
-    const y = legendY - cell + 2;
-    return `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2" fill="${c}" />`;
-  }).join("\n");
+  const legendSquares = colors
+    .map((c, i) => {
+      const x = legendX + 38 + i * (cell + gap);
+      const y = legendY - cell + 2;
+      return `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2" fill="${c}" />`;
+    })
+    .join("\n");
 
   const legend = `
 <text x="${legendX}" y="${legendY}" font-family="ui-sans-serif,system-ui" font-size="12" fill="${text}">Less</text>
@@ -139,7 +139,9 @@ ${legendSquares}
   ${rects}
   ${legend}
 </svg>`;
-}async function main() {
+}
+
+async function main() {
   const res = await octokit.graphql(query, { login: username });
   const weeks = res.user.contributionsCollection.contributionCalendar.weeks;
 
