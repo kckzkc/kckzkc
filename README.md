@@ -1,8 +1,6 @@
-# Hey, I'm Charlita 👋✨
+# Hey, I'm Charli 👋✨
 
----
-
-## 🌸 About Me
+## 🤡 About Me
 • Professional bug creator
 
 ---
@@ -11,8 +9,8 @@
 
 > "99 little bugs in the code.
 > Take one down, patch it around...
-> 127 bugs in the code."
+> 127 bugs in the code." 👀
 
 ---
 
-⭐ thanks for visiting my profile ⭐
+👾 thanks for visiting my profile 👾
